@@ -1,0 +1,19 @@
+# Virtual Environment
+venv/
+.venv/
+env/
+# Secrets & Environment Variables (CRITICAL)
+.env
+.env.local
+*.env
+!.env.example
+# Python Cache
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+# OS / Editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
