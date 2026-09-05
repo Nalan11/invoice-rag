@@ -116,14 +116,7 @@ model_choice = st.sidebar.selectbox(
     help="Select the AI model used for Text-to-SQL generation and RAG answer synthesis."
 )
 
-prompt_variant = st.sidebar.selectbox(
-    "RAG Prompt Variant",
-    ["concise", "detailed", "structured"],
-    index=0,
-    help="Choose the system prompt persona for RAG answers."
-)
 
-use_rewriting = st.sidebar.checkbox("Enable Query Rewriting", value=False, help="Use LLM to rewrite user query before semantic search.")
 
 st.sidebar.divider()
 st.sidebar.caption("LLM Zoomcamp Capstone Sandbox v2.0")
@@ -189,9 +182,7 @@ if page == "💬 Chat Assistant":
                         user_query, 
                         model, 
                         conn, 
-                        llm_model=model_choice,
-                        prompt_variant=prompt_variant,
-                        use_rewriting=use_rewriting
+                        llm_model=model_choice
                     )
                     elapsed_ms = int((time.time() - start_time) * 1000)
                     

@@ -35,7 +35,8 @@ CRITICAL RULES FOR SQL GENERATION:
 3. For compound questions (e.g. "Who bought the most laptop? How many people are there?"), query all buyers who bought the item along with their sum of quantities so the breakdown can be calculated.
 4. For vendor or buyer searches, use `ILIKE '%Name%'` on `content_json->>'vendor'` or `content_json->>'buyer'`.
 5. For multi-invoice ID inquiries (e.g. INV-2025-0001 and INV-2026-0192), filter using `WHERE content_json->>'invoice_id' IN ('INV-2025-0001', 'INV-2026-0192')`.
-6. Write ONLY a valid, read-only PostgreSQL SELECT query. Do NOT include markdown code blocks, explanation, or extra text."""
+6. Write ONLY a valid, read-only PostgreSQL SELECT query. Do NOT include markdown code blocks, explanation, or extra text.
+7. NEVER select the `embedding` or `content_text` columns. Only query `content_json` or scalar columns (`id`, `invoice_id`). Selecting `embedding` or using `SELECT *` is strictly prohibited to prevent vector data leakage."""
 
 FORBIDDEN_SQL_PATTERNS = re.compile(
     r'\b(DROP|DELETE|UPDATE|INSERT|ALTER|TRUNCATE|CREATE|GRANT|REVOKE|EXEC|EXECUTE)\b',
@@ -75,7 +76,7 @@ def generate_sql(query: str, client=None, llm_model: str = None) -> str:
     return cleaned_sql
 
 def text_to_sql_answer(query: str, db_conn, client=None, llm_model: str = None) -> dict:
-    """Execute Text-to-SQL workflow: Question → SQL → Execution → Natural Language Answer."""
+    """Execute Text-to-SQL workflow: Question -> SQL -> Execution -> Natural Language Answer."""
     if client is None:
         client = get_llm_client()
 
@@ -167,13 +168,16 @@ def text_to_sql_answer(query: str, db_conn, client=None, llm_model: str = None) 
             "method": "sql"
         }
 
-    # Clean & Format DB Rows for LLM Synthesis
+    # Clean & Format DB Rows for LLM Synthesis (Defense-in-depth: strip embedding/vector columns)
     try:
         results_data = []
         for r in rows:
             if isinstance(r, dict):
                 clean_dict = {}
                 for k, v in r.items():
+                    # Strip embedding or raw vector columns to prevent context leakage
+                    if k in ("embedding", "content_text"):
+                        continue
                     if isinstance(v, Decimal):
                         clean_dict[k] = float(v)
                     elif isinstance(v, dict):
@@ -186,6 +190,9 @@ def text_to_sql_answer(query: str, db_conn, client=None, llm_model: str = None) 
             else:
                 clean_row = []
                 for val in r:
+                    # Ignore vector embedding arrays if returned by SELECT *
+                    if isinstance(val, (list, tuple)) and len(val) > 50:
+                        continue
                     if isinstance(val, Decimal):
                         clean_row.append(float(val))
                     else:

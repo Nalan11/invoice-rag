@@ -1,4 +1,4 @@
-"""Unified Pipeline: Router → (Text-to-SQL Path | RAG Path) → Bi-Directional Fallback → Formatted Answer."""
+"""Unified Pipeline: Router -> (Text-to-SQL Path | RAG Path) -> Bi-Directional Fallback -> Formatted Answer."""
 
 from src.router import classify_query
 from src.sql_engine import text_to_sql_answer
@@ -12,20 +12,20 @@ def answer_query(
     client=None, 
     force_method: str = None,
     llm_model: str = None,
-    prompt_variant: str = "concise",
-    use_rewriting: bool = False
+    **kwargs
 ) -> dict:
     """Execute complete unified pipeline with bi-directional fallback safety net and dynamic model selection.
+    
+    SQL is the default path. If SQL yields no records or errors, it falls back to RAG.
+    If explicitly routed to RAG and RAG yields no confident answer, it falls back to SQL.
     
     Args:
         query: User natural language question.
         model: SentenceTransformer embedding model instance.
         db_conn: PostgreSQL connection.
         client: Optional OpenAI client instance.
-        force_method: 'sql' or 'rag' to override automatic router classification (useful for benchmarks).
+        force_method: 'sql' or 'rag' to override automatic router classification.
         llm_model: Optional LLM model identifier (e.g. 'llama-3.3-70b-versatile', 'gpt-4o-mini').
-        prompt_variant: 'concise', 'detailed', or 'structured'.
-        use_rewriting: Whether to enable query rewriting before RAG retrieval.
         
     Returns:
         Dict containing answer, classification method, and context/SQL details.
@@ -42,8 +42,7 @@ def answer_query(
         # Bi-Directional Fallback: If SQL yielded no results or errored, try RAG path
         if not result.get("data") or "no records found" in answer_lower or "error" in answer_lower:
             rag_res = rag_answer(
-                query, model, db_conn, top_k=5, client=client, 
-                prompt_variant=prompt_variant, use_rewriting=use_rewriting, llm_model=llm_model
+                query, model, db_conn, top_k=5, client=client, llm_model=llm_model
             )
             rag_answer_text = rag_res.get("answer", "").lower()
             if rag_res.get("retrieved_chunks") and "could not find" not in rag_answer_text:
@@ -51,8 +50,7 @@ def answer_query(
                 result["method"] = "rag (sql-fallback)"
     else:
         result = rag_answer(
-            query, model, db_conn, top_k=5, client=client,
-            prompt_variant=prompt_variant, use_rewriting=use_rewriting, llm_model=llm_model
+            query, model, db_conn, top_k=5, client=client, llm_model=llm_model
         )
         answer_lower = result.get("answer", "").lower()
         

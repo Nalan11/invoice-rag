@@ -1,0 +1,12 @@
+venv/
+.venv/
+__pycache__/
+*.pyc
+.env
+.env.local
+.git/
+*.ipynb
+docs/
+notebooks/
+scripts/
+critical_test_results.json

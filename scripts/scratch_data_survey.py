@@ -1,4 +1,13 @@
 """Quick data survey to understand distribution of entities in the database."""
+
+import os
+import sys
+
+# Ensure repository root is in sys.path regardless of execution directory
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if BASE_DIR not in sys.path:
+    sys.path.insert(0, BASE_DIR)
+
 import sys
 sys.stdout.reconfigure(encoding='utf-8')
 

@@ -17,3 +17,9 @@ __pycache__/
 Thumbs.db
 .vscode/
 .idea/
+# Docker
+*.tar
+docker-compose.override.yml
+
+# Notebook checkpoints
+.ipynb_checkpoints/
